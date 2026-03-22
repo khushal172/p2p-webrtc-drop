@@ -21,9 +21,12 @@ body {
   color: var(--text-color);
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  justify-content: flex-start;
+  padding: 2rem 1rem;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: radial-gradient(circle at top right, rgba(88,166,255,0.15), transparent 40%),
               radial-gradient(circle at bottom left, rgba(46,160,67,0.1), transparent 40%),
               var(--bg-color);
