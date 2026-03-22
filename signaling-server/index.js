@@ -44,6 +44,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('signal', ({ targetId, signalData }) => {
+    console.log(`Relaying ${signalData?.type || 'candidate'} from ${socket.id} to ${targetId}`);
     io.to(targetId).emit('signal', { senderId: socket.id, signalData });
   });
 

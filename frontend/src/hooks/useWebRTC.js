@@ -69,13 +69,24 @@ export function useWebRTC() {
     });
 
     socketRef.current.on('signal', async ({ senderId, signalData }) => {
-      let peer = peersRef.current[senderId];
-      if (!peer && signalData.type === 'offer') {
-        peer = createPeer(senderId, false);
-      }
-      if (!peer) return;
-
       try {
+        if (!signalData) {
+          console.warn('Received empty signal from:', senderId);
+          return;
+        }
+
+        let peer = peersRef.current[senderId];
+        
+        // Only created peer if it's an offer and we don't have one yet
+        if (!peer && signalData.type === 'offer') {
+          peer = createPeer(senderId, false);
+        }
+        
+        if (!peer) {
+          // Could be an ICE candidate for a peer that hasn't been created yet or was just closed
+          return;
+        }
+
         if (signalData.type === 'offer') {
           await peer.setRemoteDescription(new RTCSessionDescription(signalData));
           const answer = await peer.createAnswer();
@@ -87,7 +98,7 @@ export function useWebRTC() {
           await peer.addIceCandidate(new RTCIceCandidate(signalData));
         }
       } catch (err) {
-        console.error('Error handling signal:', err);
+        console.error('Error handling signal from:', senderId, err);
       }
     });
 
@@ -123,9 +134,11 @@ export function useWebRTC() {
       const channel = peer.createDataChannel('file-transfer', { ordered: true });
       setupDataChannel(channel, targetPeerId);
 
-      peer.createOffer().then(offer => {
-        peer.setLocalDescription(offer);
+      peer.createOffer().then(async offer => {
+        await peer.setLocalDescription(offer);
         socketRef.current.emit('signal', { targetId: targetPeerId, signalData: peer.localDescription });
+      }).catch(err => {
+        console.error('Failed to create offer:', err);
       });
     } else {
       peer.ondatachannel = (event) => setupDataChannel(event.channel, targetPeerId);
