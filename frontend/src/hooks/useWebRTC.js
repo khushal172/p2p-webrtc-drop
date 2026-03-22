@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 
-const SIGNALING_URL = `http://${window.location.hostname}:3001`;
+// Automatically use the live Render backend when deployed online
+const SIGNALING_URL = import.meta.env.PROD 
+  ? 'https://p2p-webrtc-drop.onrender.com' 
+  : `http://${window.location.hostname}:3001`;
 
 const ICE_SERVERS = {
   iceServers: [
