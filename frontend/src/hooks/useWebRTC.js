@@ -132,8 +132,9 @@ export function useWebRTC() {
       const channel = peer.createDataChannel('file-transfer', { ordered: true });
       setupDataChannel(channel, targetPeerId);
 
-      peer.createOffer().then(offer => {
-        peer.setLocalDescription(offer);
+      peer.createOffer().then(async offer => {
+        await peer.setLocalDescription(offer);
+        console.log(`Sending offer to ${targetPeerId}`);
         socketRef.current.emit('signal', { targetId: targetPeerId, signalData: peer.localDescription });
       });
     } else {
