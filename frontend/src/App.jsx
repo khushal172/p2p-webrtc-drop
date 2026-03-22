@@ -146,7 +146,7 @@ function App() {
               
               <div style={{ background: 'white', padding: '1rem', borderRadius: '16px', display: 'inline-block', marginBottom: '1.5rem', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', border: '4px solid rgba(255,255,255,0.1)' }}>
                 <QRCodeCanvas 
-                  value={`${window.location.origin}${window.location.pathname}?room=${roomId}`}
+                  value={`${qrBaseOverride ? (qrBaseOverride.startsWith('http') ? qrBaseOverride : `http://${qrBaseOverride}`) : window.location.origin}${window.location.pathname}?room=${roomId}`}
                   size={180}
                   level="H"
                   includeMargin={false}
@@ -315,7 +315,7 @@ function App() {
               
               <div style={{ background: 'white', padding: '1rem', borderRadius: '16px' }}>
                 <QRCodeCanvas 
-                  value={`${window.location.origin}${window.location.pathname}?room=${roomId}`}
+                  value={`${qrBaseOverride ? (qrBaseOverride.startsWith('http') ? qrBaseOverride : `http://${qrBaseOverride}`) : window.location.origin}${window.location.pathname}?room=${roomId}`}
                   size={200}
                   level="H"
                 />
@@ -330,7 +330,8 @@ function App() {
                 className="btn primary" 
                 style={{ width: '100%', marginTop: '0.5rem' }} 
                 onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?room=${roomId}`);
+                  const base = qrBaseOverride ? (qrBaseOverride.startsWith('http') ? qrBaseOverride : `http://${qrBaseOverride}`) : window.location.origin;
+                  navigator.clipboard.writeText(`${base}${window.location.pathname}?room=${roomId}`);
                   alert("Link copied to clipboard!");
                 }}
               >
