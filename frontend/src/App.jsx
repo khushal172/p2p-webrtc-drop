@@ -1,7 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWebRTC } from './hooks/useWebRTC';
-import { Send, Download, Users, File as FileIcon, ArrowLeft, Check, X, FileCheck, FileX, Clipboard, Copy } from 'lucide-react';
+
+import { Send, Download, Users, File as FileIcon, ArrowLeft, Check, X, FileCheck, FileX, Clipboard, Copy, QrCode } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 
 function App() {
   const { 
@@ -12,6 +14,9 @@ function App() {
   const [joinCode, setJoinCode] = useState('');
   const [activeTab, setActiveTab] = useState('files'); // 'files' | 'clipboard'
   const [clipInput, setClipInput] = useState('');
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrBaseOverride, setQrBaseOverride] = useState('');
+  const [isEditingHost, setIsEditingHost] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleFileSelect = (e) => {
@@ -135,14 +140,58 @@ function App() {
         )}
 
         {status === 'waiting' && roomId && (
-          <motion.div key="waiting" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', textAlign: 'center' }}>
-            <div style={{ background: 'rgba(88, 166, 255, 0.1)', padding: '1.5rem', borderRadius: '16px', width: '100%' }}>
-              <p style={{ color: '#8b949e', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>ROOM CODE</p>
-              <h2 style={{ fontSize: '3.5rem', letterSpacing: '0.2em', margin: 0 }}>{roomId}</h2>
+          <motion.div key="waiting" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', textAlign: 'center' }}>
+            <div style={{ background: 'rgba(88, 166, 255, 0.05)', padding: '1.5rem', borderRadius: '24px', width: '100%', border: '1px solid var(--glass-border)' }}>
+              <p style={{ color: '#8b949e', marginBottom: '0.75rem', fontSize: '0.85rem', fontWeight: 600, letterSpacing: '0.05em' }}>SHARE THIS ROOM</p>
+              
+              <div style={{ background: 'white', padding: '1rem', borderRadius: '16px', display: 'inline-block', marginBottom: '1.5rem', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', border: '4px solid rgba(255,255,255,0.1)' }}>
+                <QRCodeCanvas 
+                  value={`${qrBaseOverride ? (qrBaseOverride.startsWith('http') ? qrBaseOverride : `http://${qrBaseOverride}`) : window.location.origin}${window.location.pathname}?room=${roomId}`}
+                  size={180}
+                  level="H"
+                  includeMargin={false}
+                />
+              </div>
+
+              {window.location.hostname === 'localhost' && !qrBaseOverride && (
+                <div style={{ background: 'rgba(255, 152, 0, 0.1)', border: '1px solid rgba(255, 152, 0, 0.3)', padding: '0.75rem', borderRadius: '12px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <X size={16} color="#ff9800" style={{ transform: 'rotate(45deg)' }} />
+                  <p style={{ fontSize: '0.75rem', color: '#ff9800', margin: 0, textAlign: 'left', lineHeight: 1.2 }}>
+                    <strong>Note:</strong> You are on <code>localhost</code>. QR code might not work on other devices.
+                  </p>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
+                {isEditingHost ? (
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input 
+                      value={qrBaseOverride} 
+                      onChange={(e) => setQrBaseOverride(e.target.value)} 
+                      placeholder="e.g. 192.168.1.5:5173" 
+                      style={{ fontSize: '0.8rem', padding: '0.4rem', flex: 1 }}
+                    />
+                    <button className="btn primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={() => setIsEditingHost(false)}>Save</button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => setIsEditingHost(true)} 
+                    style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
+                  >
+                    {qrBaseOverride ? `Using: ${qrBaseOverride}` : 'Change QR Host (for mobile test)'} <QrCode size={12} />
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <h2 style={{ fontSize: '2.5rem', letterSpacing: '0.3em', margin: 0, fontWeight: 800, color: 'var(--primary)', fontFamily: 'monospace' }}>{roomId}</h2>
+                <p style={{ fontSize: '0.85rem', color: '#8b949e' }}>Scan to join instantly</p>
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#8b949e' }}>
-              <div className="loader" style={{ width: 16, height: 16, borderWidth: 2 }} />
-              <p style={{ fontSize: '0.95rem' }}>Waiting for peer to connect...</p>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--primary)' }}>
+              <div className="loader" style={{ width: 14, height: 14, borderWidth: 2 }} />
+              <p style={{ fontSize: '0.9rem', fontWeight: 500 }}>Waiting for peers...</p>
             </div>
           </motion.div>
         )}
@@ -158,9 +207,17 @@ function App() {
                 <Clipboard size={16} /> Shared Clipboard
               </button>
               <div style={{ flex: 1 }} />
-              <div className="status-badge" style={{ margin: 0, padding: '0.4rem 0.8rem', background: 'transparent', gap: '0.5rem', fontWeight: 600 }}>
+              <button 
+                onClick={() => setShowQRModal(true)} 
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'var(--text-color)', cursor: 'pointer', padding: '0.4rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                title="Show Room QR"
+              >
+                <QrCode size={18} />
+              </button>
+            </div>
+            
+            <div className="status-badge" style={{ width: 'fit-content', margin: '0 0 0.5rem 0', padding: '0.4rem 0.8rem', background: 'transparent', gap: '0.5rem', fontWeight: 600 }}>
                 <Users size={14} color="var(--success)" /> <span style={{fontSize: '0.85rem'}}>{connectedPeers.length} Peer{connectedPeers.length !== 1 ? 's' : ''} connected</span>
-              </div>
             </div>
             
             {activeTab === 'files' && (
@@ -233,6 +290,54 @@ function App() {
             )}
             
             {error && <div className="status-badge error" style={{ width: '100%', textAlign: 'center', marginTop: '1rem' }}>{error}</div>}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* QR Code Modal Overlay */}
+      <AnimatePresence>
+        {showQRModal && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setShowQRModal(false)}
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', padding: '2rem', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', maxWidth: '320px', width: '100%', textAlign: 'center' }}
+            >
+              <div style={{ display: 'flex', justifySelf: 'flex-end', width: '100%', marginBottom: '-1rem' }}>
+                <button onClick={() => setShowQRModal(false)} style={{ background: 'none', border: 'none', color: '#8b949e', cursor: 'pointer', marginLeft: 'auto' }}><X size={20} /></button>
+              </div>
+              
+              <p style={{ color: '#8b949e', fontSize: '0.9rem', fontWeight: 600 }}>INVITE OTHERS</p>
+              
+              <div style={{ background: 'white', padding: '1rem', borderRadius: '16px' }}>
+                <QRCodeCanvas 
+                  value={`${qrBaseOverride ? (qrBaseOverride.startsWith('http') ? qrBaseOverride : `http://${qrBaseOverride}`) : window.location.origin}${window.location.pathname}?room=${roomId}`}
+                  size={200}
+                  level="H"
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <h2 style={{ fontSize: '2rem', letterSpacing: '0.2em', margin: 0, fontWeight: 700, color: 'var(--primary)' }}>{roomId}</h2>
+                <p style={{ color: '#8b949e', fontSize: '0.85rem' }}>Scan to join the current session</p>
+              </div>
+
+              <button 
+                className="btn primary" 
+                style={{ width: '100%', marginTop: '0.5rem' }} 
+                onClick={() => {
+                  const base = qrBaseOverride ? (qrBaseOverride.startsWith('http') ? qrBaseOverride : `http://${qrBaseOverride}`) : window.location.origin;
+                  navigator.clipboard.writeText(`${base}${window.location.pathname}?room=${roomId}`);
+                  alert("Link copied to clipboard!");
+                }}
+              >
+                Copy Invite Link
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

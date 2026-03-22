@@ -390,6 +390,26 @@ export function useWebRTC() {
     resetAllTransferStates();
   };
 
+  // Handle Autojoin URL - Must be defined AFTER joinRoom
+  useEffect(() => {
+    // Only attempt autojoin if we are in idle state
+    if (status !== 'idle') return;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomFromUrl = urlParams.get('room');
+
+    if (roomFromUrl && roomFromUrl.length === 6) {
+       const joinWhenConnected = () => {
+         if (socketRef.current?.connected) {
+           joinRoom(roomFromUrl);
+         } else {
+           socketRef.current?.once('connect', () => joinRoom(roomFromUrl));
+         }
+       };
+       joinWhenConnected();
+    }
+  }, [status]); // Only depend on status as joinRoom is stable
+
   return { 
     status, error, roomId, connectedPeers, transfers, clipboardItems,
     createRoom, joinRoom, addFiles, acceptFile, rejectFile, cancelTransfer, sendClipboardText, reset 
