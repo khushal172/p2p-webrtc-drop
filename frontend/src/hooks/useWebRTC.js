@@ -49,13 +49,11 @@ export function useWebRTC() {
     socketRef.current = io(SIGNALING_URL);
 
     socketRef.current.on('room-created', ({ roomId }) => {
-      console.log('Room created:', roomId);
       setRoomId(roomId);
       setStatus('waiting');
     });
 
     socketRef.current.on('room-joined', ({ roomId }) => {
-      console.log('Room joined:', roomId);
       setRoomId(roomId);
       setStatus('waiting');
     });
@@ -67,14 +65,12 @@ export function useWebRTC() {
     });
 
     socketRef.current.on('peer-joined', ({ peerId }) => {
-      console.log('Peer joined:', peerId);
       createPeer(peerId, true);
     });
 
     socketRef.current.on('signal', async ({ senderId, signalData }) => {
       try {
         if (!signalData) return;
-        console.log(`Signal received from ${senderId}:`, signalData.type || 'candidate');
 
         let peer = peersRef.current[senderId];
         if (!peer && signalData.type === 'offer') {
@@ -86,13 +82,10 @@ export function useWebRTC() {
           await peer.setRemoteDescription(new RTCSessionDescription(signalData));
           const answer = await peer.createAnswer();
           await peer.setLocalDescription(answer);
-          console.log(`Sending answer to ${senderId}`);
           socketRef.current.emit('signal', { targetId: senderId, signalData: peer.localDescription });
         } else if (signalData.type === 'answer') {
-          console.log(`Setting remote answer for ${senderId}`);
           await peer.setRemoteDescription(new RTCSessionDescription(signalData));
         } else if (signalData.candidate) {
-          console.log(`Adding ICE candidate from ${senderId}`);
           await peer.addIceCandidate(new RTCIceCandidate(signalData));
         }
       } catch (err) {
@@ -134,7 +127,6 @@ export function useWebRTC() {
 
       peer.createOffer().then(async offer => {
         await peer.setLocalDescription(offer);
-        console.log(`Sending offer to ${targetPeerId}`);
         socketRef.current.emit('signal', { targetId: targetPeerId, signalData: peer.localDescription });
       });
     } else {
@@ -155,7 +147,6 @@ export function useWebRTC() {
     channel.binaryType = 'arraybuffer';
     
     channel.onopen = () => {
-      console.log('Data channel opened with:', peerId);
       channelsRef.current[peerId] = channel;
       setStatus('connected');
       setConnectedPeers(prev => [...new Set([...prev, peerId])]);
@@ -397,7 +388,6 @@ export function useWebRTC() {
     const roomFromUrl = urlParams.get('room');
 
     if (roomFromUrl && roomFromUrl.length === 6) {
-       console.log('Autojoining room from URL:', roomFromUrl);
        const joinWhenConnected = () => {
          if (socketRef.current?.connected) {
            joinRoom(roomFromUrl);
